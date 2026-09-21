@@ -8,6 +8,11 @@ local Config = {
     WorkInkLinkId = 5007119,
     Secret = "RIVALS_ACCESS_5007119",
     MainScriptURL = "https://raw.githubusercontent.com/m4rcogmz/unllock-all-and-aim-assist/refs/heads/main/UA",
+
+    -- Raw URL of THIS loader on GitHub.
+    -- Used only to queue the loader again after a Roblox teleport.
+    LoaderURL = "https://raw.githubusercontent.com/m4rcogmz/unllock-all-key-system/refs/heads/main/keysystem",
+
     KeyFileName = "RivalsWorkInkKey.txt",
     HubName = "RIVALS",
     HubDescription = "Unlock All & Aim Assist",
@@ -125,8 +130,73 @@ local function copyLink()
     return false
 end
 
+local function resolveQueueOnTeleport()
+    local env = _G
+
+    if type(getgenv) == "function" then
+        local ok, value = pcall(getgenv)
+        if ok and type(value) == "table" then
+            env = value
+        end
+    end
+
+    local candidates = {
+        type(env) == "table" and env.queue_on_teleport or nil,
+        type(env) == "table" and env.queueonteleport or nil,
+        type(queue_on_teleport) == "function" and queue_on_teleport or nil,
+        type(queueonteleport) == "function" and queueonteleport or nil,
+    }
+
+    if type(syn) == "table" then
+        candidates[#candidates + 1] = syn.queue_on_teleport
+    end
+
+    if type(fluxus) == "table" then
+        candidates[#candidates + 1] = fluxus.queue_on_teleport
+    end
+
+    for _, fn in ipairs(candidates) do
+        if type(fn) == "function" then
+            return fn
+        end
+    end
+
+    return nil
+end
+
+local function queueForNextServer()
+    if type(Config.LoaderURL) ~= "string"
+        or Config.LoaderURL == ""
+        or Config.LoaderURL:find("PUT_YOUR_", 1, true) then
+        return false
+    end
+
+    local queueFn = resolveQueueOnTeleport()
+    if type(queueFn) ~= "function" then
+        return false
+    end
+
+    local bootstrap =
+        "loadstring(game:HttpGet("
+        .. string.format("%q", Config.LoaderURL)
+        .. "))()"
+
+    local ok = pcall(queueFn, bootstrap)
+    return ok == true
+end
+
+local function clearSavedKey()
+    if type(delfile) == "function"
+        and type(isfile) == "function"
+        and isfile(Config.KeyFileName) then
+        pcall(delfile, Config.KeyFileName)
+    end
+end
+
 local function startMainScript()
-    if Config.MainScriptURL == "PUT_YOUR_MAIN_SCRIPT_URL_HERE" then
+    if type(Config.MainScriptURL) ~= "string"
+        or Config.MainScriptURL == ""
+        or Config.MainScriptURL:find("PUT_YOUR_", 1, true) then
         return false, "Set MainScriptURL first."
     end
 
@@ -264,10 +334,9 @@ local function createGui()
             end
 
             saveKey(key)
+            queueForNextServer()
 
             -- Hide the key GUI immediately after successful validation.
-            -- The main script can continue loading without leaving
-            -- "Loading..." on screen.
             gui.Enabled = false
 
             task.spawn(function()
@@ -306,11 +375,40 @@ local function createGui()
         status.TextColor3 = Color3.fromRGB(100,170,255)
     end)
 
-    local saved = getSavedKey()
-    if saved then
-        input.Text = saved
-        task.defer(verifyAndStart, saved)
-    end
 end
 
-createGui()
+local function silentStartup()
+    local saved = getSavedKey()
+
+    if not saved then
+        return false
+    end
+
+    local valid = verifyKey(saved)
+
+    if not valid then
+        clearSavedKey()
+        return false
+    end
+
+    -- Keep the next Roblox teleport armed before starting the main script.
+    queueForNextServer()
+
+    local started = startMainScript()
+
+    if not started then
+        return false
+    end
+
+    return true
+end
+
+-- Important: do NOT create the GUI first.
+-- A valid saved key results in a completely silent startup.
+task.spawn(function()
+    local silentOk = silentStartup()
+
+    if not silentOk then
+        createGui()
+    end
+end)
