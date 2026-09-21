@@ -264,19 +264,32 @@ local function createGui()
             end
 
             saveKey(key)
-            status.Text = "Key valid. Loading..."
-            status.TextColor3 = Color3.fromRGB(80,220,130)
 
-            task.wait(0.2)
+            -- Hide the key GUI immediately after successful validation.
+            -- The main script can continue loading without leaving
+            -- "Loading..." on screen.
+            gui.Enabled = false
 
-            local started, err = startMainScript()
-            if started then
-                gui:Destroy()
-            else
-                status.Text = err or "Could not load."
-                status.TextColor3 = Color3.fromRGB(235,90,90)
-                busy = false
-            end
+            task.spawn(function()
+                local started, err = startMainScript()
+
+                if started then
+                    if gui and gui.Parent then
+                        gui:Destroy()
+                    end
+                else
+                    -- If the main script failed to start, bring the GUI
+                    -- back so the user can see the error instead of being
+                    -- left with a hidden/broken loader.
+                    if gui and gui.Parent then
+                        gui.Enabled = true
+                        status.Text = err or "Could not load."
+                        status.TextColor3 = Color3.fromRGB(235,90,90)
+                    end
+
+                    busy = false
+                end
+            end)
         end)
     end
 
