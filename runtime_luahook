@@ -1,4 +1,4 @@
-local loaderUrl = "https://raw.githubusercontent.com/TEU-USER/TEU-REPO/refs/heads/main/auto-loader"
+local loaderUrl = "https://raw.githubusercontent.com/m4rcogmz/rivals-runtime/refs/heads/main/runtime_luahook"
 
 local scriptUrl = "https://api.tsuki.best/scripts/b018c6ff954abb0375b7e883f7bc253f.lua"
 
