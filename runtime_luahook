@@ -1,0 +1,16 @@
+local loaderUrl = "https://raw.githubusercontent.com/TEU-USER/TEU-REPO/refs/heads/main/auto-loader"
+
+local scriptUrl = "https://api.tsuki.best/scripts/b018c6ff954abb0375b7e883f7bc253f.lua"
+
+local queue =
+    queue_on_teleport
+    or queueonteleport
+    or (syn and syn.queue_on_teleport)
+
+if queue then
+    queue(string.format([[
+        loadstring(game:HttpGet(%q))()
+    ]], loaderUrl))
+end
+
+loadstring(game:HttpGet(scriptUrl))()
