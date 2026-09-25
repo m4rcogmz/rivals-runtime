@@ -1,16 +1,20 @@
 local loaderUrl = "https://raw.githubusercontent.com/m4rcogmz/rivals-runtime/refs/heads/main/runtime_luahook"
 
-local scriptUrl = "https://api.tsuki.best/scripts/b018c6ff954abb0375b7e883f7bc253f.lua"
+local scriptUrl = "https://raw.githubusercontent.com/m4rcogmz/rivals-core/refs/heads/main/luahook_script"
 
 local queue =
     queue_on_teleport
     or queueonteleport
     or (syn and syn.queue_on_teleport)
+    or (fluxus and fluxus.queue_on_teleport)
 
 if queue then
     queue(string.format([[
+        task.wait(5)
         loadstring(game:HttpGet(%q))()
     ]], loaderUrl))
 end
+
+task.wait(5)
 
 loadstring(game:HttpGet(scriptUrl))()
